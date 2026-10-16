@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block subheading %}Host a live game from any quiz — players join with the PIN{% endblock %}
+{% block topbar_extra %}<a class="btn btn-ghost btn-sm" href="{{ url_for('join_page') }}"><i class="bi bi-joystick"></i> Join with PIN</a>
+<a class="btn btn-primary btn-sm" href="{{ url_for('builder') }}"><i class="bi bi-plus-lg"></i> New quiz</a>{% endblock %}
+{% block head %}
+<style>
+.qz .emo{font-size:46px;width:80px;height:80px;border-radius:24px;display:grid;place-items:center;background:var(--grad);margin-bottom:14px;box-shadow:0 12px 30px color-mix(in srgb,var(--a1) 40%,transparent);transition:transform .4s}
+.qz:hover .emo{transform:rotate(-10deg) scale(1.08)}
+.hero-banner{background:linear-gradient(120deg,color-mix(in srgb,var(--a1) 60%,transparent),color-mix(in srgb,var(--a2) 60%,transparent));border:0;color:#fff}
+.hero-banner h2{font-size:28px}
+</style>
+{% endblock %}
+{% block content %}
+<div class="card hero-banner fade-up mb row between">
+  <div><h2>Ready to go live? ⚡</h2><p style="opacity:.85">Pick a quiz, press <b>Host live</b>, share the PIN — or add bots and play solo.</p></div>
+  <form method="post" action="{{ url_for('join_page') }}" class="row"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input class="input" name="pin" placeholder="Game PIN" maxlength="7" style="width:170px;letter-spacing:4px;font-weight:700;background:rgba(255,255,255,.18);color:#fff;border-color:rgba(255,255,255,.3)">
+    <button class="btn" style="background:#fff;color:#222"><i class="bi bi-box-arrow-in-right"></i> Join</button></form>
+</div>
+<div class="grid g3">
+  {% for q in rows %}
+  <div class="card hover fade-up qz" data-t="{{ q.title|lower }}">
+    <div class="emo">{{ q.emoji }}</div>
+    <h3 style="font-size:18px;margin-bottom:4px">{{ q.title }}</h3>
+    <div class="muted small mb">{{ q.description or 'No description' }}</div>
+    <div class="row small muted mb"><span><i class="bi bi-question-circle"></i> {{ q.n }} questions</span><span><i class="bi bi-person"></i> {{ q.owner }}</span>
+      {% if q.owner_id == user.id %}<span class="badge accent">Yours</span>{% endif %}</div>
+    <form method="post" action="{{ url_for('host_new', quiz_id=q.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-primary btn-block host-btn"><i class="bi bi-broadcast"></i> Host live</button></form>
+  </div>
+  {% endfor %}
+</div>
+<div class="card mt fade-up"><h3><i class="bi bi-clock-history"></i> Recent games</h3>
+  {% for gm in games %}<div class="list-item"><div class="dot-ico">{{ gm.emoji }}</div><div style="flex:1"><b class="small">{{ gm.title }}</b><div class="muted small">PIN {{ gm.pin }} · {{ gm.np }} players · {{ gm.created_at[:16] }}</div></div>
+    {% if gm.winner and gm.status == 'ended' %}<span class="badge warning">🏆 {{ gm.winner }}</span>{% else %}<span class="badge">{{ gm.status }}</span>{% endif %}</div>
+  {% else %}<div class="empty"><i class="bi bi-controller"></i>No games yet — host your first one!</div>{% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script>globalSearch.oninput = e => document.querySelectorAll('.qz').forEach(c => c.style.display = c.dataset.t.includes(e.target.value.toLowerCase()) ? '' : 'none');</script>
+{% endblock %}

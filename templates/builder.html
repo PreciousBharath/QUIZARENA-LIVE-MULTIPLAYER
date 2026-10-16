@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block subheading %}Build a quiz — add questions, mark the right answer, set a timer{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='game.css') }}">
+<style>.qb{border:1px solid var(--border);border-radius:18px;padding:18px;margin-bottom:16px;background:var(--card-solid)}
+.optrow{display:flex;gap:10px;align-items:center;margin-bottom:8px}.optrow .sw{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#fff;font-size:18px;flex-shrink:0}
+.optrow input[type=radio]{accent-color:var(--success);width:20px;height:20px}</style>{% endblock %}
+{% block topbar_extra %}<button class="btn btn-primary btn-sm" id="save"><i class="bi bi-cloud-check"></i> Save quiz</button>{% endblock %}
+{% block content %}
+<div class="grid g-2-1">
+  <div>
+    <div class="card fade-up mb"><div class="grid g-2-1"><div class="field"><label>Quiz title</label><input class="input" id="title" placeholder="e.g. Data Science Trivia"></div>
+      <div class="field"><label>Emoji</label><select id="emoji">{% for e in ['🧠','🤖','🐍','📊','🛡️','⛓️','🚀','🎯','🌍','🧪'] %}<option>{{ e }}</option>{% endfor %}</select></div></div>
+      <div class="field"><label>Description</label><input class="input" id="desc" placeholder="Short description"></div>
+      <label class="check"><input type="checkbox" id="pub" checked> Public — other users can host this quiz</label></div>
+    <div id="qs"></div>
+    <button class="btn btn-ghost btn-block" id="addQBtn"><i class="bi bi-plus-circle"></i> Add question</button>
+  </div>
+  <div class="card fade-up" style="position:sticky;top:96px;align-self:start"><h3><i class="bi bi-phone"></i> Player preview</h3><div id="pv" style="transform:scale(.8);transform-origin:top left;width:125%"></div></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='game.js') }}"></script>
+<script>
+const COL = ['#E21B3C', '#1368CE', '#D89E00', '#26890C'];
+let n = 0, focusQ = null;
+function addQ(d = {q: '', options: ['', '', '', ''], answer: 0, time: 20}) {
+  const id = n++, el = document.createElement('div'); el.className = 'qb pop'; el.dataset.id = id;
+  el.innerHTML = `<div class="row between mb"><b class="gradient-text">Question <span class="num"></span></b><div class="row"><select class="time" style="width:auto">${[10, 15, 20, 30, 45, 60].map(t => `<option value="${t}" ${t == d.time ? 'selected' : ''}>${t}s</option>`).join('')}</select>
+    <button class="icon-btn rm"><i class="bi bi-trash"></i></button></div></div><input class="input qtext mb" placeholder="Type your question" value="${esc(d.q)}">
+    ${[0, 1, 2, 3].map(i => `<div class="optrow"><span class="sw" style="background:${COL[i]}">${SHAPES[i]}</span><input class="input opt" placeholder="Answer ${i + 1}${i > 1 ? ' (optional)' : ''}" value="${esc(d.options[i] || '')}">
+    <input type="radio" name="ans${id}" value="${i}" ${d.answer === i ? 'checked' : ''} title="Correct answer"></div>`).join('')}<div class="small muted">● Select the radio button next to the correct answer</div>`;
+  document.getElementById('qs').appendChild(el); renum(); focusQ = el; preview();
+}
+const renum = () => document.querySelectorAll('.qb').forEach((q, i) => q.querySelector('.num').textContent = i + 1);
+const collect = el => ({q: el.querySelector('.qtext').value, options: [...el.querySelectorAll('.opt')].map(o => o.value).filter(Boolean),
+  answer: +(el.querySelector('input[type=radio]:checked') || {value: 0}).value, time: +el.querySelector('.time').value});
+function preview() { const el = focusQ || document.querySelector('.qb'); if (!el) return pv.innerHTML = ''; const q = collect(el);
+  pv.innerHTML = `<div class="q-title" style="font-size:22px">${esc(q.q || 'Your question appears here')}</div>${Game.answers({options: q.options.length ? q.options : ['Answer 1', 'Answer 2']}, {disabled: true})}`; }
+qs.addEventListener('input', e => { focusQ = e.target.closest('.qb'); preview(); });
+qs.addEventListener('click', e => { if (e.target.closest('.rm')) { e.target.closest('.qb').remove(); focusQ = null; renum(); preview(); } });
+addQBtn.onclick = () => addQ();
+save.onclick = async () => { const r = await api('/builder', {body: {title: title.value, description: desc.value, emoji: emoji.value, public: pub.checked, questions: [...document.querySelectorAll('.qb')].map(collect)}});
+  toast('Quiz saved! Redirecting…', 'success'); setTimeout(() => location.href = '{{ url_for("quizzes") }}', 900); };
+addQ({q: 'Which planet is known as the Red Planet?', options: ['Venus', 'Mars', 'Jupiter', 'Mercury'], answer: 1, time: 20});
+</script>
+{% endblock %}

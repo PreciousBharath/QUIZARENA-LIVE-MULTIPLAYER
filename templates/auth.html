@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  {% include "_head.html" %}
+  <title>{{ 'Sign in' if mode == 'login' else 'Create account' }} · {{ ui.name }}</title>
+</head>
+<body>
+<div class="bg-blobs"><span></span><span></span><span></span></div>
+<button class="icon-btn theme-fab" data-toggle-theme aria-label="Toggle theme"><i data-theme-icon class="bi bi-sun"></i></button>
+
+<div class="auth-wrap">
+  <section class="auth-hero">
+    <canvas id="particles"></canvas>
+    <div class="brand fade-up"><div class="logo">{{ ui.icon }}</div><div>{{ ui.name }}<small>{{ ui.short }}</small></div></div>
+    <div>
+      <span class="badge accent fade-up"><i class="bi bi-stars"></i> {{ ui.badge or 'New' }}</span>
+      <h1 class="fade-up">{{ ui.hero|safe }}</h1>
+      <p class="lead fade-up">{{ ui.tagline }}</p>
+      <div class="feature-list">
+        {% for icon, title, text in ui.features %}
+        <div class="fade-up"><i class="bi {{ icon }}"></i><span><b>{{ title }}</b><br><span class="muted small">{{ text }}</span></span></div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="muted small fade-up">© {{ year }} {{ ui.name }} · Built by Bharath</div>
+    {% if ui.float %}
+    <div class="floating-card">{{ ui.float[0]|safe }}</div>
+    <div class="floating-card two">{{ ui.float[1]|safe }}</div>
+    {% endif %}
+  </section>
+
+  <section class="auth-side">
+    <div class="card glow auth-card fade-up">
+      <h2>{{ 'Welcome back 👋' if mode == 'login' else 'Create your account 🚀' }}</h2>
+      <p class="muted small">{{ 'Sign in to continue to ' ~ ui.name if mode == 'login' else 'Start free — it takes less than a minute.' }}</p>
+      <div class="auth-switch">
+        <a href="{{ url_for('login') }}" class="{{ 'active' if mode == 'login' }}">Sign in</a>
+        <a href="{{ url_for('register') }}" class="{{ 'active' if mode == 'register' }}">Register</a>
+      </div>
+
+      {% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}
+        <div class="badge {{ cat }}" style="display:flex;width:100%;padding:10px 12px;border-radius:12px;margin-bottom:10px"><i class="bi bi-info-circle"></i>{{ m }}</div>
+      {% endfor %}{% endwith %}
+
+      {% if mode == 'login' %}
+      <form method="post" id="loginForm" autocomplete="on">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field"><label>Email</label>
+          <div class="input-icon"><i class="bi bi-envelope"></i><input class="input" type="email" name="email" id="email" required placeholder="you@example.com" autofocus></div></div>
+        <div class="field"><label>Password</label>
+          <div class="input-icon"><i class="bi bi-lock"></i><input class="input" type="password" name="password" id="password" required placeholder="••••••••">
+            <button type="button" class="toggle-pw" aria-label="Show password"><i class="bi bi-eye"></i></button></div></div>
+        <div class="row between mb"><label class="check"><input type="checkbox" name="remember" checked> Remember me</label>
+          <a class="small gradient-text" href="{{ url_for('register') }}">New here? Register</a></div>
+        <button class="btn btn-primary btn-block" type="submit"><i class="bi bi-box-arrow-in-right"></i> Sign in</button>
+        <div class="or">or</div>
+        <button class="btn btn-ghost btn-block" type="button" id="demoBtn"><i class="bi bi-lightning-charge"></i> Try the demo account</button>
+      </form>
+      {% else %}
+      <form method="post" id="registerForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field"><label>Full name</label>
+          <div class="input-icon"><i class="bi bi-person"></i><input class="input" name="name" required minlength="2" value="{{ form.get('name','') }}" placeholder="Your name"></div></div>
+        <div class="field"><label>Email</label>
+          <div class="input-icon"><i class="bi bi-envelope"></i><input class="input" type="email" name="email" required value="{{ form.get('email','') }}" placeholder="you@example.com"></div></div>
+        <div class="field"><label>Password</label>
+          <div class="input-icon"><i class="bi bi-lock"></i><input class="input" type="password" name="password" required minlength="8" data-strength="#pwStrength" placeholder="Min 8 chars, letters & numbers">
+            <button type="button" class="toggle-pw" aria-label="Show password"><i class="bi bi-eye"></i></button></div>
+          <div class="strength" id="pwStrength"><span></span><span></span><span></span><span></span></div><div class="strength-text" id="pwStrength-text"></div></div>
+        <div class="field"><label>Confirm password</label>
+          <div class="input-icon"><i class="bi bi-shield-lock"></i><input class="input" type="password" name="confirm" required placeholder="Repeat password"></div></div>
+        <label class="check mb"><input type="checkbox" name="terms" required> I agree to the Terms & Privacy Policy</label>
+        <button class="btn btn-primary btn-block" type="submit"><i class="bi bi-rocket-takeoff"></i> Create account</button>
+      </form>
+      {% endif %}
+      <p class="muted small center mt"><i class="bi bi-shield-check"></i> Passwords are salted & hashed · CSRF protected</p>
+    </div>
+  </section>
+</div>
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+<script>
+  document.getElementById("demoBtn")?.addEventListener("click", () => {
+    const e = document.getElementById("email"), p = document.getElementById("password");
+    const type = (el, txt, done) => { el.value = ""; let i = 0; const t = setInterval(() => { el.value += txt[i++]; if (i >= txt.length) { clearInterval(t); done && done(); } }, 35); };
+    type(e, "{{ demo_email }}", () => type(p, "{{ demo_password }}", () => setTimeout(() => document.getElementById("loginForm").submit(), 250)));
+  });
+</script>
+</body>
+</html>

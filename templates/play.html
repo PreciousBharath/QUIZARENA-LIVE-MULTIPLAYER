@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block heading %}{{ gm.emoji }} {{ gm.title }}{% endblock %}
+{% block subheading %}PIN {{ gm.pin }} · you're in the game!{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='game.css') }}">{% endblock %}
+{% block topbar_extra %}<span class="badge accent" id="myScore" style="font-size:15px;padding:8px 14px">0 pts</span>{% endblock %}
+{% block content %}
+<div id="stage"></div><canvas id="confetti"></canvas>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='confetti.js') }}"></script>
+<script src="{{ url_for('static', filename='game.js') }}"></script>
+<script>
+const PIN = "{{ gm.pin }}", ME = {{ user.id }}; let S = null, lastKey = '', picked = null, done = false;
+function render() {
+  const key = S.status + S.q_index + (S.my_answer ? 'a' : '') + (S.status === 'lobby' ? S.players.length : '');
+  if (S.me) myScore.textContent = `${S.me.score.toLocaleString()} pts · #${S.me.rank}`;
+  if (S.status === 'question' && key === lastKey) { const t = document.getElementById('tm'); if (t) t.innerHTML = Game.timer(S.question.remaining, S.question.time); return; }
+  if (key === lastKey) return; lastKey = key;
+  const stage = document.getElementById('stage');
+  if (S.status === 'lobby') { picked = null;
+    stage.innerHTML = `<div class="card glow center pop" style="max-width:640px;margin:20px auto;padding:40px"><div style="font-size:70px">${S.me ? S.me.avatar : '🙂'}</div>
+      <h2>You're in, ${esc(S.me ? S.me.nickname : '')}!</h2><p class="muted">See your name on the host screen? Waiting for the host to start…</p>
+      <div class="players-cloud mt">${S.players.map(p => `<div class="pl"><span class="av">${p.avatar}</span>${esc(p.nickname)}</div>`).join('')}</div>
+      <div class="mt"><i class="bi bi-arrow-repeat spin" style="font-size:26px;color:var(--a1);display:inline-block"></i></div></div>`;
+  } else if (S.status === 'question') {
+    if (S.my_answer) { stage.innerHTML = `<div class="card glow big-feedback pop"><div class="icon">⏳</div><h2>Answer locked in!</h2><p class="muted">Waiting for the others… (${S.answered}/${S.players.length})</p></div>`; return; }
+    picked = null;
+    stage.innerHTML = `<div class="card glow pop"><div class="row between"><span class="badge accent">Question ${S.q_index + 1} / ${S.total_q}</span><div id="tm">${Game.timer(S.question.remaining, S.question.time)}</div></div>
+      <div class="q-title">${esc(S.question.q)}</div>${Game.answers(S.question)}</div>`;
+    stage.querySelectorAll('.ans').forEach(b => b.onclick = async () => {
+      if (picked !== null) return; picked = +b.dataset.i; stage.querySelectorAll('.ans').forEach(x => x.classList.toggle('dim', x !== b)); b.classList.add('picked');
+      try { const r = await api(`/api/game/${PIN}/answer`, {body: {choice: picked}}); toast(r.correct ? `Correct! +${r.points} ${r.streak >= 2 ? '🔥x' + r.streak : ''}` : 'Not quite…', r.correct ? 'success' : 'danger', 2000); } catch (e) {}
+      lastKey = ''; });
+  } else if (S.status === 'reveal') {
+    const a = S.my_answer, ok = a && a.correct;
+    stage.innerHTML = `<div class="grid g2"><div class="card glow big-feedback pop"><div class="icon">${!a ? '⌛' : ok ? '🎉' : '😬'}</div>
+      <h2 style="color:${ok ? 'var(--success)' : 'var(--danger)'}">${!a ? "Time's up!" : ok ? 'Correct!' : 'Incorrect'}</h2>
+      <p class="mt" style="font-size:22px"><b>+${a ? a.points : 0}</b> points</p><p class="muted">You're in <b>#${S.me.rank}</b> place${S.me.streak >= 2 ? ` · 🔥 ${S.me.streak} streak` : ''}</p>
+      <div class="mt small muted">Correct answer: <b>${esc(S.question.options[S.question.answer])}</b></div></div>
+      <div class="card fade-up"><h3><i class="bi bi-bar-chart-steps"></i> Leaderboard</h3>${Game.leaderboard(S.players, ME)}</div></div>`;
+    if (ok) confettiBurst(60);
+  } else if (S.status === 'ended') {
+    stage.innerHTML = `<div class="card glow center pop"><h2 style="font-size:30px">Game over! You finished #${S.me.rank} ${S.me.rank === 1 ? '🏆' : S.me.rank <= 3 ? '🥉' : '👏'}</h2>${Game.podium(S.players)}
+      <a class="btn btn-primary mt" href="{{ url_for('quizzes') }}"><i class="bi bi-house"></i> Home</a></div>`;
+    if (!done && S.me.rank <= 3) setTimeout(() => confettiBurst(200), 1200); done = true;
+  }
+}
+async function loop() { try { const r = await fetch(`/api/game/${PIN}`); if (r.status === 404) return toast('Game no longer exists', 'warning'); S = await r.json(); render(); } catch (e) {}
+  setTimeout(loop, S && S.status === 'ended' ? 6000 : 1000); }
+loop();
+</script>
+{% endblock %}

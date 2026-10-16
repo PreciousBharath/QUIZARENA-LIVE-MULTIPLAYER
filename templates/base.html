@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  {% include "_head.html" %}
+  <title>{% block title %}{{ page_title or "Dashboard" }}{% endblock %} · {{ ui.name }}</title>
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="bg-blobs"><span></span><span></span><span></span></div>
+<div class="grid-overlay"></div>
+
+<aside class="sidebar">
+  <a class="brand" href="{{ url_for(ui.home) }}">
+    <div class="logo">{{ ui.icon }}</div>
+    <div>{{ ui.name }}<small>{{ ui.short }}</small></div>
+  </a>
+  <div class="nav-label">Menu</div>
+  <nav class="nav">
+    {% for label, endpoint, icon in ui.nav %}
+      <a href="{{ url_for(endpoint) }}" class="{{ 'active' if request.endpoint == endpoint }}"><i class="bi {{ icon }}"></i>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  <div class="nav-label">Account</div>
+  <nav class="nav">
+    <a href="{{ url_for('profile') }}" class="{{ 'active' if request.endpoint == 'profile' }}"><i class="bi bi-person-gear"></i>Profile & Settings</a>
+  </nav>
+  <div class="bottom">
+    <div class="upgrade"><b>{{ ui.icon }} {{ ui.promo_title or 'Pro tip' }}</b>{{ ui.promo or 'Press Ctrl + K to search.' }}</div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <button class="icon-btn menu-toggle" data-menu aria-label="Menu"><i class="bi bi-list"></i></button>
+    <div>
+      <h1>{% block heading %}{{ page_title or "Dashboard" }}{% endblock %}</h1>
+      <div class="sub">{% block subheading %}Hello {{ user.name.split()[0] }} — have a productive day ✨{% endblock %}</div>
+    </div>
+    <div class="spacer"></div>
+    {% block topbar_extra %}{% endblock %}
+    <label class="search"><i class="bi bi-search muted"></i><input id="globalSearch" placeholder="{{ ui.search_hint or 'Search…' }}"><span class="kbd">Ctrl K</span></label>
+    <button class="icon-btn" data-toggle-theme aria-label="Toggle theme"><i data-theme-icon class="bi bi-sun"></i></button>
+    <div class="dropdown">
+      <div class="avatar" data-dropdown style="background:{{ user.avatar_color }}">{{ user.name[:1]|upper }}</div>
+      <div class="dropdown-menu">
+        <div class="head"><b>{{ user.name }}</b>{{ user.email }}</div>
+        <a href="{{ url_for('profile') }}"><i class="bi bi-person"></i>Profile</a>
+        <a href="{{ url_for(ui.home) }}"><i class="bi bi-grid"></i>Dashboard</a>
+        <form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" style="color:var(--danger)"><i class="bi bi-box-arrow-right"></i>Sign out</button></form>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+{% with msgs = get_flashed_messages(with_categories=true) %}{% for cat, m in msgs %}<i hidden data-flash="{{ cat if cat != 'message' else 'info' }}" data-msg="{{ m }}"></i>{% endfor %}{% endwith %}
+<script src="{{ url_for('static', filename='chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

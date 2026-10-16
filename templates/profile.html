@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% set page_title = "Profile & Settings" %}
+{% block subheading %}Manage your account, security and preferences{% endblock %}
+{% block content %}
+<div class="grid g-1-2">
+  <div class="card glow fade-up center">
+    <div class="avatar pop" style="width:96px;height:96px;font-size:38px;margin:10px auto 14px;background:{{ user.avatar_color }}">{{ user.name[:1]|upper }}</div>
+    <h3 style="justify-content:center">{{ user.name }}</h3>
+    <div class="muted small">{{ user.email }}</div>
+    <div class="divider"></div>
+    <div class="row between small"><span class="muted">Member since</span><b>{{ user.created_at[:10] }}</b></div>
+    <div class="row between small mt"><span class="muted">Last sign-in</span><b>{{ (user.last_login or '—')[:16] }}</b></div>
+    <div class="row between small mt"><span class="muted">Theme</span>
+      <button class="btn btn-sm btn-ghost" data-toggle-theme><i data-theme-icon class="bi bi-sun"></i> Toggle</button></div>
+  </div>
+  <div class="grid">
+    <form class="card fade-up" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="profile">
+      <h3><i class="bi bi-person-badge"></i> Personal info</h3>
+      <div class="grid g2">
+        <div class="field"><label>Full name</label><input class="input" name="name" value="{{ user.name }}" required></div>
+        <div class="field"><label>Email</label><input class="input" value="{{ user.email }}" disabled></div>
+      </div>
+      <label>Avatar colour</label>
+      <div class="row mb">
+        {% for c in colors %}
+        <label style="margin:0;cursor:pointer"><input type="radio" name="avatar_color" value="{{ c }}" {{ 'checked' if c == user.avatar_color }} hidden>
+          <span class="avatar" style="background:{{ c }};width:34px;height:34px;outline:{{ '3px solid var(--text)' if c == user.avatar_color else 'none' }};outline-offset:2px"></span></label>
+        {% endfor %}
+      </div>
+      <button class="btn btn-primary"><i class="bi bi-check2"></i> Save changes</button>
+    </form>
+    <form class="card fade-up" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="password">
+      <h3><i class="bi bi-shield-lock"></i> Change password</h3>
+      <div class="grid g2">
+        <div class="field"><label>Current password</label><input class="input" type="password" name="current" required></div>
+        <div class="field"><label>New password</label><input class="input" type="password" name="new" required minlength="8" data-strength="#pStr">
+          <div class="strength" id="pStr"><span></span><span></span><span></span><span></span></div><div class="strength-text" id="pStr-text"></div></div>
+      </div>
+      <button class="btn btn-ghost"><i class="bi bi-key"></i> Update password</button>
+    </form>
+    <form class="card fade-up" method="post" onsubmit="return confirm('Delete your account and all data permanently?')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}"><input type="hidden" name="action" value="delete">
+      <h3 style="color:var(--danger)"><i class="bi bi-exclamation-octagon"></i> Danger zone</h3>
+      <p class="muted small mb">Type your email to permanently delete your account and all associated data.</p>
+      <div class="row"><input class="input" name="confirm_email" placeholder="{{ user.email }}" style="flex:1"><button class="btn btn-danger"><i class="bi bi-trash"></i> Delete account</button></div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>document.querySelectorAll('input[name=avatar_color]').forEach(r=>r.addEventListener('change',()=>{document.querySelectorAll('input[name=avatar_color]+span').forEach(s=>s.style.outline='none');r.nextElementSibling.style.outline='3px solid var(--text)'}))</script>
+{% endblock %}

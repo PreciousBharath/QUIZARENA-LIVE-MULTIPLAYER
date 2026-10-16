@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>{% include "_head.html" %}<title>{{ code }} · {{ ui.name }}</title></head>
+<body style="display:grid;place-items:center;min-height:100vh;text-align:center;padding:20px">
+<div class="bg-blobs"><span></span><span></span><span></span></div>
+<div class="card glow fade-up" style="max-width:460px;padding:40px">
+  <div style="font-size:90px;font-weight:700;line-height:1" class="gradient-text">{{ code }}</div>
+  <p class="muted" style="margin:14px 0 24px">{{ message }}</p>
+  <a class="btn btn-primary" href="{{ url_for('index') }}"><i class="bi bi-house"></i> Back home</a>
+</div>
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>

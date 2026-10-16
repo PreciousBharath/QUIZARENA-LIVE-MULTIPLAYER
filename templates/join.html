@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block subheading %}Enter the PIN shown on the host's screen{% endblock %}
+{% block head %}<style>.av-pick{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.av-pick label{margin:0;cursor:pointer}
+.av-pick span{display:grid;place-items:center;font-size:30px;height:62px;border-radius:16px;background:var(--input);border:2px solid transparent;transition:.2s}
+.av-pick input{display:none}.av-pick input:checked+span{border-color:var(--a1);transform:scale(1.08);background:color-mix(in srgb,var(--a1) 18%,transparent)}
+.pin-in{font-size:40px;text-align:center;letter-spacing:12px;font-weight:700;padding:18px}</style>{% endblock %}
+{% block content %}
+<form class="card glow fade-up" method="post" style="max-width:560px;margin:10px auto;padding:34px">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <div class="center mb"><div style="font-size:56px">🎮</div><h2>Join a live game</h2></div>
+  <div class="field"><input class="input pin-in" name="pin" required inputmode="numeric" maxlength="7" placeholder="000000" autofocus></div>
+  <div class="field"><label>Nickname</label><input class="input" name="nickname" maxlength="20" value="{{ user.name.split()[0] }}"></div>
+  <label>Pick your avatar</label>
+  <div class="av-pick mb">{% for a in AVATARS %}<label><input type="radio" name="avatar" value="{{ a }}" {{ 'checked' if loop.first }}><span>{{ a }}</span></label>{% endfor %}</div>
+  <button class="btn btn-primary btn-block" style="font-size:17px;padding:15px"><i class="bi bi-rocket-takeoff"></i> Enter the arena</button>
+</form>
+{% endblock %}
